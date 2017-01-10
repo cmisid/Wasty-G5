@@ -55,3 +55,25 @@ A rajouter:
 
 Le parcours juge le plus malin ne passera pas necesserairement
 par tous les points de passages possibles.
+
+
+
+
+Le point de départ noté (le champ `start`) doit contenir les champs suivants:
+
+- `latitude`, un nombre flottant
+- `longitude`, un nombre flottant
+- `departure_time`: une chaîne de charactères "HH:MM:SS" 
+
+Chaque point de la liste des points (le champ `points`) doit contenir les champs suivants:
+
+- `latitude`, un nombre flottant
+- `longitude`, un nombre flottant
+- `price`, un nombre flottant
+- `available_since`, une chaîne de charactères "HH:MM:SS"
+- `available_until`, une chaîne de charactères "HH:MM:SS"
+
+Le réponse renvoyé est une liste de points (dont le premier est le point de départ) contenant les champs suivants:
+
+- `latitude`, un nombre flottant
+- `longitude`, un nombre flottant
