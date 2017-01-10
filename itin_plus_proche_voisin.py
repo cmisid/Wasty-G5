@@ -3,7 +3,7 @@
 Created on Mon Jan  9 15:06:40 2017
 
 @author: Groupe[5]
-fichier: score.py version 1.0.1
+fichier: itin_plus_proche_voisin.py version 1.0.0
 """
 
 import googlemaps
