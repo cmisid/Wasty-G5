@@ -1,31 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Jan  9 15:06:40 2017
-
 @author: Groupe[5]
-fichier: itin_plus_proche_voisin.py version 1.0.0
+fichier: itin_nearest_neighbour.py version 2.0.0
+(restructuration: fonction calculate_arc stockee dans un autre fichier,
+ ancien nom: itin_plus_proche_voisin.py)
 """
 
-import googlemaps
 
-"""
-ENTREE: dep_point = le noeud (lieu) de depart
-        arv_point = le noeud (lieu) d'arrivee
-        mode_transport = le mode de transport
-        gmaps = pour utiliser google api avec la bonne cle
-OBJECTIF: calcule un arc entre 2 noeuds
-SORTIE: retourne un arc sous la forme suivante: 
-            [1er noeud, 2eme noeud, distance en metre, duree en secondes]
-"""
-def calculate_arc(dep_point, arv_point, mode_transport, gmaps):
-    distance = gmaps.distance_matrix(dep_point[0], arv_point[0], mode=mode_transport)
-    result = [dep_point,
-              arv_point,
-              distance["rows"][0]["elements"][0]["distance"]["value"],
-              distance["rows"][0]["elements"][0]["duration"]["value"]
-              ]
-    return result
-
+from often_used_functions import calculate_arc
 
 """
 ENTREE: dep_node = noeud de depart
@@ -38,7 +20,6 @@ SORTIE: retourne un parcours sous la forme d'une liste d'arcs:
         (un arc: [1er noeud, 2eme noeud, distance en metre, duree en secondes])
 """
 def best_itin_nearest_neighbour(dep_node, crossing_points_list, bool_temps):
-    gmaps = googlemaps.Client(key='AIzaSyDRpQO4ww7fK610iK5Np-GeiPbCSTuaqec')
     # Nombre de noeuds d'arrivees restants
     nb_elements = len(crossing_points_list)
     itinerary = [dep_node]
@@ -48,7 +29,7 @@ def best_itin_nearest_neighbour(dep_node, crossing_points_list, bool_temps):
         minimum = 1000000
         for i in range (0, len(crossing_points_list)):
             # calcul des distances entre la position de depart et les autres points de passage
-            arc = calculate_arc(itinerary[-1],crossing_points_list[i], "driving", gmaps)
+            arc = calculate_arc(itinerary[-1],crossing_points_list[i], "driving")
             if bool_temps:
                 # stockage de la duree qui sera comparee
                 value = arc[3]

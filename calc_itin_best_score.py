@@ -1,22 +1,28 @@
 # -*- coding: utf-8 -*-
 """
 @author: Groupe[5]
-fichier: score.py version 1.0.1
-(révision: dans "time_between_nodes", duration est en sec et pas en min)
+fichier: score.py version 2.0.0
+(restructuration: fonction calculate_path stockee dans un autre fichier,
+ correction: gestion de l'heure de depart dans shortest_path)
 """
 
 import itertools
-import googlemaps
 import datetime
+
+from often_used_functions import calculate_path
 
 
 # RETRIEVAL_TIME correspond au temps que l'utilisateur passe chez quelqu'un
 # le temps de ramasser les dechets (on a choisi 5 min)
 RETRIEVAL_TIME = 5
 
+# Coefficient d'importance du temps d'attente par rapport au temps de trajet
+# (lorsqu'un utilisateur arrive en avance, son temps d'attente a un poids plus important)
+WAITING_FACTOR = 4
+
 # Coefficients d'importance des parametres pour calculer le score d'un parcours.
 # Fortement susceptibles de changer.
-DURATION_FACTOR = 0.3 #importance de la duree du trajet
+DURATION_FACTOR = 0.33 #importance de la duree du trajet
 PRICE_FACTOR = 1 #importance du gain
 
 
@@ -35,6 +41,9 @@ def time_between_nodes(time, arrival_node, duration):
         datetime.timedelta(seconds = duration) + 
         datetime.timedelta(minutes = RETRIEVAL_TIME) < arrival_node[1]):
         result = arrival_node[1] - time
+        result = datetime.timedelta(seconds = duration) + (
+            arrival_node[1] - (time + datetime.timedelta(seconds = duration))
+            ) * WAITING_FACTOR
         return (result.total_seconds()/60 + RETRIEVAL_TIME)
     else:
         # Cas de figure 2: il arrive apres la fin de la tranche horaire
@@ -52,28 +61,7 @@ def time_between_nodes(time, arrival_node, duration):
 
 """
 ENTREE: node = tous les noeuds sous forme de liste
-        mode_transport = le mode de transport
-        gmaps = pour utiliser google api avec la bonne cle
-OBJECTIF: calcule tous les arcs entre les noeuds
-SORTIE: retoure une liste d'arc sous la forme suivante: 
-            [1er noeud, 2eme noeud, distance en metre, duree en secondes]
-"""
-def calculate_path(nodes, mode_transport, gmaps):
-  path = []
-  for i in nodes:
-      for j in nodes:
-          if (j != i) :
-              distance = gmaps.distance_matrix(i[0], j[0], mode = mode_transport)
-              #On renvoie la distance et le temps de trajet entre deux points.
-              path.append([i, j, distance["rows"][0]["elements"][0]["distance"]["value"],
-                           distance["rows"][0]["elements"][0]["duration"]["value"]]
-                           )
-  return path
-
-
-"""
-ENTREE: node = tous les noeuds sous forme de liste
-        departure = la date et heure de depart
+        departure = la date et heure de depart du premier noeud
 OBJECTIF: calcule le parcours le plus avantageux
 SORTIE: la liste des noeuds dans le meilleur ordre
 """
@@ -82,15 +70,15 @@ def shortest_path(nodes, departure_time):
     time = 0
     has_best_path = False
     result = []
-    # Recuperation de l'API googlemap
-    gmaps = googlemaps.Client(key='AIzaSyDRpQO4ww7fK610iK5Np-GeiPbCSTuaqec')
+    # local_dep_time correspond au moment de depart du noeud sur lequel on se trouve.
+    local_dep_time = departure_time
     # path_list correspond a l'ensemble des chemins pour chaque paire de noeud.
-    path_list = calculate_path(nodes, "driving", gmaps)
+    path_list = calculate_path(nodes, "driving")
     # On essaie tous les nombres de noeuds possibles.
     for nb_nodes in range(2,len(nodes) + 1):
         # On passe par toutes les combinaisons possibles
         for subset in itertools.permutations(nodes, nb_nodes):
-            if(subset[0] == nodes[0]):
+            if (subset[0] == nodes[0]):
                 i = 0
                 # On calcule le score pour chaque trajet, a partir du temps et du prix,
                 # en mettant un coefficient discriminant devant chacun des parametres,
@@ -100,8 +88,8 @@ def shortest_path(nodes, departure_time):
                     j = 0
                     while (time < 100000) and j <(len(path_list)):
                         if path_list[j][0] == subset[i] and path_list[j][1] == subset[i + 1]:
-                            time = time_between_nodes(departure_time, subset[i + 1] , path_list[j][3])                        
-                            departure_time = departure_time + datetime.timedelta(minutes = time)
+                            time = time_between_nodes(local_dep_time, subset[i + 1] , path_list[j][3])                        
+                            local_dep_time = local_dep_time + datetime.timedelta(minutes = time)
                             score = score + (DURATION_FACTOR * time - PRICE_FACTOR * subset[i + 1][3])
                         j = j + 1
                     i = i + 1
@@ -115,12 +103,12 @@ def shortest_path(nodes, departure_time):
                         min_score = full_score
                         result = subset
                 score = 0
+                local_dep_time = departure_time
     return result
-
 
 '''
 # Test pour les horaires (heure de depart, contraintes horaires debut et fin)
-dep = datetime.datetime(2017,1,16,12,0,0)
+dep = datetime.datetime(2017,1,16,11,30,0)
 a = datetime.datetime(2017,1,16,12,0,0)
 b = datetime.datetime(2017,1,16,14,0,0)
 
