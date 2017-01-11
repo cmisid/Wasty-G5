@@ -1,68 +1,83 @@
 # -*- coding: utf-8 -*-
 """
 @author: Groupe[5]
-fichier: itin_nearest_neighbour.py version 2.0.0
-(restructuration: fonction calculate_arc stockee dans un autre fichier,
- ancien nom: itin_plus_proche_voisin.py)
+fichier: itin_nearest_neighbour.py version 3.0.0
+(ajout: gestion des contraintes horaires, ne tient pas compte des prix)
 """
 
 
-from often_used_functions import calculate_arc
+from often_used_functions import calculate_arc, time_between_nodes
+import datetime
+
 
 """
 ENTREE: dep_node = noeud de depart
         crossing_points_list = liste des points par lesquels on peut passer
-        bool_temps = booleen qui indique si on compare les temps entre 2 points,
-            si non, on compare les distances.
+        departure-time = moment du depart.
 OBJECTIF: calcule un itineraire rapidement en cherchant le meilleur noeud
           a partir d'un autre (plus rapide ou plus proche).
-SORTIE: retourne un parcours sous la forme d'une liste d'arcs: 
-        (un arc: [1er noeud, 2eme noeud, distance en metre, duree en secondes])
+SORTIE: retourne un parcours sous la forme d'une liste de noeuds: 
+        (un noeud: [coordonnees GPS (lat/long),
+                    heure de debut de la contrainte horaire,
+                    heure de fin de la contrainte horaire])
 """
-def best_itin_nearest_neighbour(dep_node, crossing_points_list, bool_temps):
+def best_itin_nearest_neighbour(dep_node, crossing_points_list, departure_time):
     # Nombre de noeuds d'arrivees restants
     nb_elements = len(crossing_points_list)
+    # Itineraire qui contiendra la liste des noeuds, commence par noeud de depart
     itinerary = [dep_node]
-    while (nb_elements > 0) :
-        # valeur de base d'une distance ou d'un temps minimal
-        # qui sera normalement plus grande que n'importe quelle valeur obtenue
-        minimum = 1000000
+    available_node = True
+    basic_minimum = float("inf")
+    while (nb_elements > 0) and available_node:
+        # valeur de base d'un score minimal
+        # qui sera plus grande que n'importe quelle valeur obtenue
+        minimum = basic_minimum
         for i in range (0, len(crossing_points_list)):
-            # calcul des distances entre la position de depart et les autres points de passage
+            # calcul des arcs entre la position de depart et les autres points de passage
             arc = calculate_arc(itinerary[-1],crossing_points_list[i], "driving")
-            if bool_temps:
-                # stockage de la duree qui sera comparee
-                value = arc[3]
-            else:
-                # stockage de la distance qui sera comparee
-                value = arc[2]
-            if (value < minimum):
-                minimum = value
-                # on recupere la position de la station la plus proche
+            # stockage de la duree qui sera comparee
+            time_value = time_between_nodes(departure_time, crossing_points_list[i], arc[3])
+            if (time_value < minimum):
+                minimum = time_value
+                # on recupere la position de la station la plus proche en terme de score
                 position = arc[1]
-        # ajout au chemin
-        itinerary.append(position)
-        # Reperage du noeud selectionne dans la liste des noeuds potentiels
-        index = crossing_points_list.index(position)
-        # Supprime le noeud des points de passage possible
-        del crossing_points_list[index]
-        nb_elements = len(crossing_points_list)
+        if minimum != basic_minimum:
+            # ajout au chemin
+            itinerary.append(position)
+            # mise a jour du temps
+            departure_time = departure_time + datetime.timedelta(minutes = minimum)
+            # Reperage du noeud selectionne dans la liste des noeuds potentiels
+            index = crossing_points_list.index(position)
+            # Supprime le noeud des points de passage possible
+            del crossing_points_list[index]
+            nb_elements = len(crossing_points_list)
+        else:
+            # Dans ce cas, on stoppe notre parcours et on n'ajoute pas
+            # de noeud à l'itineraire
+            available_node = False
     return itinerary
 
 
 '''
 # Position de depart
-dep_node = [(43.6005543, 1.4038282), None, None, 10] #position de depart
+dep_node = [(43.6005543, 1.4038282), None, None]
 # Arrivees possibles
-crossing_point=[[(43.620068, 1.435757), None, None, 10],
-                [(43.606521, 1.465111), None, None, 10],
-                [(43.602729, 1.452065), None, None, 10],
-                [(43.612238, 1.427174), None, None, 10]]
-crossing_points_list = [[(43.620068, 1.435757), None, None, 10],
-                        [(43.606521, 1.465111), None, None, 10],
-                        [(43.602729, 1.452065), None, None, 10]
+crossing_points_list = [[(43.620068, 1.435757), None, None],
+                        [(43.606521, 1.465111), None, None],
+                        [(43.602729, 1.452065), None, None],
+                        [(43.612238, 1.427174), None, None]
                         ]
-bool_temps = False
-bool_temps = True
-print(best_itin_nearest_neighbour(dep_node, crossing_points_list, bool_temps))
+
+dep_time = datetime.datetime.now()
+a = dep_time - datetime.timedelta(hours = 2)
+b = dep_time - datetime.timedelta(hours = 1)
+c = dep_time + datetime.timedelta(hours = 2)
+d = dep_time + datetime.timedelta(hours = 3)
+
+crossing_points_list = [[(43.620068, 1.435757), a, b],
+                        [(43.606521, 1.465111), a, c],
+                        [(43.602729, 1.452065), c, d]
+                        ]
+
+print(best_itin_nearest_neighbour(dep_node, crossing_points_list, dep_time))
 '''
