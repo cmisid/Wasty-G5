@@ -13,7 +13,7 @@ import datetime
 """
 ENTREE: dep_node = noeud de depart
         crossing_points_list = liste des points par lesquels on peut passer
-        departure-time = moment du depart.
+        departure_time = moment du depart.
 OBJECTIF: calcule un itineraire rapidement en cherchant le meilleur noeud
           a partir d'un autre (plus rapide ou plus proche).
 SORTIE: retourne un parcours sous la forme d'une liste de noeuds: 

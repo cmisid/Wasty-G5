@@ -62,7 +62,7 @@ def shortest_path(nodes, departure_time):
     return result
 
 
-'''
+
 # Test pour les horaires (heure de depart, contraintes horaires debut et fin)
 dep = datetime.datetime(2017,1,16,11,30,0)
 a = datetime.datetime(2017,1,16,12,0,0)
@@ -87,4 +87,3 @@ test_noeud = [[(43.6005543,1.4038282),  None, None],
 
 # Appel a la fonction.
 print(shortest_path(test_noeud, dep))
-'''
