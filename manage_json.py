@@ -1,44 +1,49 @@
 # -*- coding: utf-8 -*-
 """
 @author: Groupe[5]
-fichier: manage_json.py version 1.0.0
+fichier: manage_json.py version 1.0.1
+(amelioration fonction verif_datetime: on gere un intervalle de temps
+    saisi par l'utilisateur qui serait trop petit)
 """
 
-import json
 import datetime
+from often_used_functions import RETRIEVAL_TIME
 
-
-'''
+"""
 ENTREE: un string sous la forme H:M:S
 OBJECTIF: convertit un string en datetime
 SORTIE: un datetime
-'''
+"""
 def string_to_datetime(string_time):
     time = datetime.datetime.strptime(string_time, '%H:%M:%S').time()
     date = datetime.datetime.now()
     return datetime.datetime.combine(date,time)
 
 
-'''
+"""
 ENTREE: un noeud
 OBJECTIF: fait en sorte d'avoir le debut d'une plage horaire avant la fin
 SORTIE: le noeud potentiellement corrige
-'''
+"""
 def verif_datetime(node):
     # On autorise minuit comme heure de fin
     if node[1] > node[2] and node[2].time() != datetime.time(0, 0, 0):
         node[1], node[2] = node[2], node[1]
     if node[2].time() == datetime.time(0, 0, 0):
         node[2] = node[2] + datetime.timedelta(days = 1)
+    # Pour un meilleur fonctionnement, il faut qu'on ait un intervalle
+    # qui soit d'une longueur superieure ou egale au temps de recuperation
+    if ((node[2] - node[1]).seconds / 60) < RETRIEVAL_TIME:
+        node[2] = node[1] + datetime.timedelta(minutes = 5)
     return node
 
-'''
+"""
 ENTREE: le contenu d'un fichier json contenant les donnees necessaires
     a l'execution de notre calcul de meilleur parcours
 OBJECTIF: renvoyer les donnees necessaires a l'execution du calcul de meilleur parcours
 SORTIE: une liste des donnees sous la forme suivante:
     [noeud de depart, moment de depart, liste des points de passages possibles]
-'''
+"""
 def json_reader(json_data):
     data_list = []
 
@@ -79,14 +84,9 @@ def json_writer(path):
         # sauvegarde des coordonnees dans l'ordre d'arrive
         points_list.append({"latitude": path[i][0][0], "longitude": path[i][0][1]})
     data = {"points": points_list}
-    '''
-    # ecriture du resultat dans un fichier json
-    with open('result.json', 'w') as fp:
-        json.dump(data, fp)
-    '''
     return data
 
-
+'''
 array='{"start": {"latitude": 40.0,"longitude": 20.0, "departure_time": "9:00:00"},"items": [{"latitude": 30.0,"longitude": 15.0,"available_since": "9:00:00","available_until": "17:00:00"},{"latitude": 32.0,"longitude": 14.0,"available_since": "9:00:00","available_until": "17:00:00"},{"latitude": 32.0,"longitude": 13.0,"available_since": "10:00:00","available_until": "18:00:00"}]}'
 json_data = json.loads(array)
 data_list = json_reader(json_data)
@@ -100,3 +100,4 @@ path = ([(43.6005543, 1.4038282), None, None],
         [(43.606521, 1.465111), None, None],
         [(43.620068, 1.435757), start_constr_int, end_constr_int])
 json_writer(path)
+'''

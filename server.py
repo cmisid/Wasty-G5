@@ -14,8 +14,8 @@ app = Flask(__name__)
 @app.route('/')
 def index():
     payload = {
-        'confiance': 0.8,
-        'tag': 'meuble'
+        'test_1': 0.8,
+        'test_2': 'meuble'
     }
     return jsonify(payload)
 
@@ -23,12 +23,16 @@ def index():
 @app.route('/optimize-itinerary', methods=['POST'])
 def optimize_itinerary():
     payload = request.get_json()
+    # Adaptation des donnees json (dictionnaire) sous une forme adaptee
+    # a nos fonctions.
     data_list = json_reader(payload)
     nodes = data_list[2]
     # On met le noeud de depart en tete de la liste des noeuds
     nodes.insert(0, data_list[0])
     departure_time = data_list[1]
+    # Calcul du meilleur parcours
     itinerary = shortest_path(nodes, departure_time)
+    # Adaptation de nos resultats sous un format json adequat
     points = json_writer(itinerary)
     return jsonify(points)
 
